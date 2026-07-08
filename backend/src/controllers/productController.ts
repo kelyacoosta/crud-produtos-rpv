@@ -3,121 +3,90 @@ import { db } from '../database/connection'
 
 // GET /produtos (aceitar ?q= para busca por nome, ex: whereILike igual ao exemplo de /users)
 export const getProducts = async (req: Request, res: Response) => {
-    // TODO: buscar todos os produtos na tabela `produtos`
+    const { q } = req.query
+
     // Dica: usar req.query.q para filtrar por nome (whereILike)
-
-    try {
-        const { q } = req.query
-
-        let query = db('produtos')
-
-        if (q) {
-            query = query.whereILike('nome', `%${q}%`)
-        }
-
-        const produtos = await query.select('*')
-
-        return res.json(produtos)
-    } catch (error) {
-        return res.status(500).json({ erro: 'Erro ao listar produtos.' })
+    if (q) {
+        const busca = await db('produtos').whereILike('nome', `%${q}%`)
+        return res.status(200).json({ message: "Dados consultados com sucesso", data: busca })
     }
+
+    // TODO: buscar todos os produtos na tabela `produtos`
+    const query = await db('produtos')
+
+
+    return res.status(200).json({ message: "Dados consultados com sucesso", data: query })
 }
 
 // GET /produtos/:id
 export const getProductById = async (req: Request, res: Response) => {
     // TODO: buscar um produto pelo id (req.params.id)
-    // Se não encontrar, retornar 404
+    const { id } = req.params
 
-    try {
-        const { id } = req.params
+    const query = await db('produtos').where({ id })
 
-        const produto = await db('produtos')
-            .where({ id })
-            .first()
-
-        if (!produto) {
-            return res.status(404).json({ erro: 'Produto não encontrado.' })
-        }
-
-        return res.json(produto)
-    } catch (error) {
-        return res.status(500).json({ erro: 'Erro ao buscar produto.' })
+    if (query.length == 0) {
+        return res.status(400).json({ message: "Produto não encontrado !" })
     }
+
+    return res.status(200).json({ message: "Consulta realizada com sucesso !", data: query })
 }
 
 // POST /produtos
 export const createProduct = async (req: Request, res: Response) => {
     // TODO: inserir um novo produto (req.body: nome, descricao, preco, quantidade)
 
-    try {
-        const { nome, descricao, preco, quantidade } = req.body
+    const { body } = req
 
-        const [id] = await db('produtos').insert({
-            nome,
-            descricao,
-            preco,
-            quantidade
-        })
 
-        return res.status(201).json({
-            mensagem: 'Produto criado com sucesso.',
-            id
-        })
-    } catch (error) {
-        return res.status(500).json({ erro: 'Erro ao criar produto.' })
-    }
+    const { nome, descricao, preco, quantidade } = body
+
+    const query = await db('produtos').insert({
+        nome,
+        descricao,
+        preco,
+        quantidade
+    })
+
+    return res.status(200).json({
+        message: "Produto cadastrado com sucesso !",
+        data: body
+    })
 }
 
 // PUT /produtos/:id
 export const updateProduct = async (req: Request, res: Response) => {
     // TODO: atualizar um produto existente (req.params.id + req.body)
-    // Se não encontrar, retornar 404
+    const { body, params: { id } } = req
 
-    try {
-        const { id } = req.params
-        const { nome, descricao, preco, quantidade } = req.body
+    const { nome, descricao, preco, quantidade } = body
 
-        const atualizado = await db('produtos')
-            .where({ id })
-            .update({
-                nome,
-                descricao,
-                preco,
-                quantidade
-            })
+    const query = await db('produtos').update({
+        nome,
+        descricao,
+        preco,
+        quantidade
+    }).where({ id })
 
-        if (atualizado === 0) {
-            return res.status(404).json({ erro: 'Produto não encontrado.' })
-        }
-
-        return res.json({
-            mensagem: 'Produto atualizado com sucesso.'
-        })
-    } catch (error) {
-        return res.status(500).json({ erro: 'Erro ao atualizar produto.' })
+    if (!query) {
+        return res.status(400).json({ message: "Produto não encontrado !" })
     }
+
+    res.status(200).json({ message: "Dados atualizados com sucesso !" })
+    // Se não encontrar, retornar 404
 }
 
 // DELETE /produtos/:id
 export const deleteProduct = async (req: Request, res: Response) => {
     // TODO: remover um produto pelo id (req.params.id)
-    // Se não encontrar, retornar 404
+    const { id } = req.params
 
-    try {
-        const { id } = req.params
+    const query = await db('produtos').where({ id }).del()
 
-        const removido = await db('produtos')
-            .where({ id })
-            .del()
-
-        if (removido === 0) {
-            return res.status(404).json({ erro: 'Produto não encontrado.' })
-        }
-
-        return res.json({
-            mensagem: 'Produto removido com sucesso.'
-        })
-    } catch (error) {
-        return res.status(500).json({ erro: 'Erro ao remover produto.' })
+    if (!query) {
+        return res.status(400).json({ message: "Produto não encontrado !" })
     }
+
+    return res.status(200).json({ message: "Dados excluídos com sucesso !" })
+    // Se não encontrar, retornar 404
 }

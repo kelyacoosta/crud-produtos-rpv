@@ -1,10 +1,10 @@
 import express, { Response } from 'express'
 import cors from 'cors'
 import { login } from './controllers/authController'
-import { getProducts, getProductById, createProduct, updateProduct, deleteProduct } from './controllers/productController'
 import { AuthRequest, verifyJWT } from './middleware/authMiddleware'
 import z from 'zod'
 import { validate } from './services/validate'
+import { createProduct, deleteProduct, getProductById, getProducts, updateProduct } from './controllers/productController'
 
 const app = express()
 const PORT = 5000
@@ -49,14 +49,32 @@ app.get('/users', (req, res) => {
     })
 })
 
+// ########## TRABALHO CRUD PRODUTOS ########################
+
+// GET	/produtos	Não	Listar todos os produtos. Aceitar ?q= para buscar por nome
+// GET	/produtos/:id	Não	Buscar um produto pelo id
+// POST	/produtos	Não	Criar um novo produto
+// PUT	/produtos/:id	Não	Atualizar um produto existente
+// DELETE	/produtos/:id	Não	Remover um produto
+
+const schemaCreateProduct = z.object({
+    nome: z.string('Cara eu só aceito string').min(3, 'Mínimo 3 caracteres.'),
+    descricao: z.string().min(3, 'Mínimo 3 caracteres.'),
+    preco: z.number().min(0, 'Preço deve ser maior ou igual a 0.'),
+    quantidade: z.optional(z.number().min(0, 'Quantidade deve ser maior ou igual a 0.'))
+})
+
+const schemaUpdateProduct = z.object({
+    nome: z.optional(z.string().min(3, 'Mínimo 3 caracteres.')),
+    descricao: z.optional(z.string().min(3, 'Mínimo 3 caracteres.')),
+    preco: z.optional(z.number().min(0, 'Preço deve ser maior ou igual a 0.')),
+    quantidade: z.optional(z.number().min(0, 'Quantidade deve ser maior ou igual a 0.'))
+})
+
 app.get('/produtos', getProducts)
-
 app.get('/produtos/:id', getProductById)
-
-app.post('/produtos', createProduct)
-
-app.put('/produtos/:id', updateProduct)
-
+app.post('/produtos', validate(schemaCreateProduct), createProduct)
+app.put('/produtos/:id', validate(schemaUpdateProduct), updateProduct)
 app.delete('/produtos/:id', deleteProduct)
 
 app.listen(PORT, () => {
